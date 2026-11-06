@@ -8,10 +8,12 @@ class MineHistoryItem extends StatelessWidget {
     super.key,
     required this.item,
     required this.onPop,
+    this.width = 180,
   });
 
   final HistoryItemModel item;
   final VoidCallback onPop;
+  final double width;
 
   @override
   Widget build(BuildContext context) {
@@ -27,8 +29,8 @@ class MineHistoryItem extends StatelessWidget {
             children: [
               NetworkImgLayer(
                 src: item.cover,
-                width: 180,
-                height: 110,
+                width: width,
+                height: width * 110 / 180,
               ),
               if (hasDuration)
                 ...item.progressIndicator(ColorScheme.of(context)),

@@ -1100,11 +1100,21 @@ abstract final class Pref {
   static bool get enableEmoteTooltip =>
       _setting.get(SettingBoxKey.enableEmoteTooltip, defaultValue: false);
 
-  static Set<MineTabType> get mineTabs =>
-      (_setting.get(SettingBoxKey.mineTabs) as List?)
-          ?.map<MineTabType>((index) => .values[index])
-          .toSet() ??
-      MineTabType.kDefault;
+  static Set<MineTabType> get mineTabs {
+    final tabs =
+        (_setting.get(SettingBoxKey.mineTabs) as List?)
+            ?.map<MineTabType>((index) => .values[index])
+            .toSet() ??
+        MineTabType.kDefault;
+    if (PlatformUtils.isDesktop) {
+      // 桌面版将观看记录固定在首位，收藏从快捷按钮进入。
+      return {
+        MineTabType.history,
+        ...tabs.where((tab) => tab != MineTabType.favorite),
+      };
+    }
+    return tabs;
+  }
 
   static bool get blockAtOnlyReply =>
       _setting.get(SettingBoxKey.blockAtOnlyReply, defaultValue: false);

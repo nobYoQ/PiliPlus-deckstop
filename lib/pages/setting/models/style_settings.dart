@@ -373,8 +373,9 @@ List<SettingsModel> get styleSettings => [
     onTap: _showMineTabsDialog,
     title: '我的页卡片',
     leading: const Icon(Icons.person_outline),
-    getSubtitle: () =>
-        '当前显示：${Pref.mineTabs.map((item) => item.label).join('、')}',
+    getSubtitle: () => PlatformUtils.isDesktop
+        ? '观看记录固定平铺，收藏从按钮进入；可设置附加卡片'
+        : '当前显示：${Pref.mineTabs.map((item) => item.label).join('、')}',
   ),
   PopupModel(
     leading: const Icon(Icons.home_outlined),
@@ -926,9 +927,16 @@ Future<void> _showMineTabsDialog(
   final res = await showDialog<List<MineTabType>>(
     context: context,
     builder: (context) => OrderedMultiSelectDialog<MineTabType>(
-      title: const Text('我的页卡片'),
-      initValues: Pref.mineTabs,
-      values: {for (final i in MineTabType.values) i: i.label},
+      title: Text(PlatformUtils.isDesktop ? '我的页附加卡片' : '我的页卡片'),
+      initValues: PlatformUtils.isDesktop
+          ? Pref.mineTabs.where((tab) => tab != MineTabType.history).toSet()
+          : Pref.mineTabs,
+      values: {
+        for (final i in MineTabType.values)
+          if (!PlatformUtils.isDesktop ||
+              (i != MineTabType.favorite && i != MineTabType.history))
+            i: i.label,
+      },
     ),
   );
   if (res != null) {
