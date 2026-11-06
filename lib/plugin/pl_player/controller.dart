@@ -128,6 +128,7 @@ class PlPlayerController with BlockConfigMixin, AudioNormalizationMixin {
   final RxBool controlsLock = false.obs;
 
   final RxBool isFullScreen = false.obs;
+  final RxBool isInAppFullScreen = false.obs;
   bool isLive = false;
 
   bool _isVertical = false;
@@ -1496,14 +1497,32 @@ class PlPlayerController with BlockConfigMixin, AudioNormalizationMixin {
 
   // 全屏
   bool _fsProcessing = false;
+
+  Future<void> toggleFullScreen({bool inAppFullScreen = false}) {
+    final sameMode =
+        !PlatformUtils.isDesktop || isInAppFullScreen.value == inAppFullScreen;
+    return triggerFullScreen(
+      status: !(isFullScreen.value && sameMode),
+      inAppFullScreen: inAppFullScreen,
+    );
+  }
+
   Future<void> triggerFullScreen({
     bool status = true,
-    bool inAppFullScreen = false,
+    bool? inAppFullScreen,
     DeviceOrientation? orientation,
     bool isManualFS = true,
   }) async {
     if (isDesktopPip) return;
-    if (isFullScreen.value == status) return;
+    // 自动播放下一集等重复请求保留当前模式；按钮可显式切换模式。
+    final windowFullscreen =
+        status &&
+        PlatformUtils.isDesktop &&
+        (inAppFullScreen ?? isInAppFullScreen.value);
+    if (isFullScreen.value == status &&
+        isInAppFullScreen.value == windowFullscreen) {
+      return;
+    }
 
     if (_fsProcessing) return;
     _fsProcessing = true;
@@ -1517,7 +1536,7 @@ class PlPlayerController with BlockConfigMixin, AudioNormalizationMixin {
             orientation: orientation,
           );
         } else {
-          enterDesktopFullScreen(inAppFullScreen: inAppFullScreen);
+          enterDesktopFullScreen(inAppFullScreen: windowFullscreen);
         }
       } else {
         if (PlatformUtils.isMobile) {
@@ -1533,6 +1552,7 @@ class PlPlayerController with BlockConfigMixin, AudioNormalizationMixin {
         }
       }
     } finally {
+      isInAppFullScreen.value = windowFullscreen;
       _setFullScreen(status);
       _fsProcessing = false;
     }

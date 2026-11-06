@@ -5,6 +5,7 @@ import 'package:PiliPlus/pages/video/widgets/header_mixin.dart';
 import 'package:PiliPlus/plugin/pl_player/controller.dart';
 import 'package:PiliPlus/plugin/pl_player/models/video_fit_type.dart';
 import 'package:PiliPlus/plugin/pl_player/widgets/common_btn.dart';
+import 'package:PiliPlus/plugin/pl_player/widgets/fullscreen_buttons.dart';
 import 'package:PiliPlus/plugin/pl_player/widgets/play_pause_btn.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_key.dart';
@@ -44,7 +45,6 @@ class _BottomControlState extends State<BottomControl> with HeaderMixin {
 
   @override
   Widget build(BuildContext context) {
-    final isFullScreen = plPlayerController.isFullScreen.value;
     return Padding(
       padding: const .symmetric(horizontal: 14, vertical: 13),
       child: Material(
@@ -202,27 +202,7 @@ class _BottomControlState extends State<BottomControl> with HeaderMixin {
               },
             ),
             if (!plPlayerController.isDesktopPip)
-              ComBtn(
-                height: 30,
-                tooltip: isFullScreen ? '退出全屏' : '全屏',
-                icon: isFullScreen
-                    ? const Icon(
-                        Icons.fullscreen_exit,
-                        size: 24,
-                        color: Colors.white,
-                      )
-                    : const Icon(
-                        Icons.fullscreen,
-                        size: 24,
-                        color: Colors.white,
-                      ),
-                onTap: () =>
-                    plPlayerController.triggerFullScreen(status: !isFullScreen),
-                onSecondaryTap: () => plPlayerController.triggerFullScreen(
-                  status: !isFullScreen,
-                  inAppFullScreen: true,
-                ),
-              ),
+              PlayerFullscreenButtons(controller: plPlayerController),
           ],
         ),
       ),
