@@ -21,6 +21,7 @@ import 'package:PiliPlus/services/account_service.dart';
 import 'package:PiliPlus/utils/accounts.dart';
 import 'package:PiliPlus/utils/accounts/account.dart';
 import 'package:PiliPlus/utils/extension/scroll_controller_ext.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/storage.dart';
 import 'package:PiliPlus/utils/storage_key.dart';
 import 'package:PiliPlus/utils/storage_pref.dart';
@@ -54,11 +55,11 @@ class MineController extends GetxController with AccountMixin {
       onTap: () => Get.toNamed('/download'),
     ),
     (
-      icon: CustomIcons.history,
-      title: '观看记录',
+      icon: PlatformUtils.isDesktop ? Icons.star_border : CustomIcons.history,
+      title: PlatformUtils.isDesktop ? '我的收藏' : '观看记录',
       onTap: () {
         if (isLogin) {
-          Get.toNamed('/history');
+          Get.toNamed(PlatformUtils.isDesktop ? '/fav' : '/history');
         }
       },
     ),

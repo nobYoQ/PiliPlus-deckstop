@@ -89,27 +89,121 @@ class _MediaPageState extends CommonPageState<MinePage>
             child: refreshIndicator(
               onRefresh: controller.onRefresh,
               child: onBuild(
-                ListView(
-                  padding: const .only(bottom: 150),
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  children: [
-                    _buildUserInfo(theme, secondary),
-                    _buildActions(secondary),
-                    for (final tab in controller.mineTabs)
-                      switch (tab) {
-                        .favorite => Obx(_buildFav),
-                        .history => Obx(_buildHistory),
-                        .later => Obx(_buildLater),
-                        .sub => Obx(_buildSub),
-                      },
-                  ],
-                ),
+                PlatformUtils.isDesktop
+                    ? _buildDesktopContent(secondary)
+                    : ListView(
+                        padding: const .only(bottom: 150),
+                        physics: const AlwaysScrollableScrollPhysics(),
+                        children: [
+                          _buildUserInfo(theme, secondary),
+                          _buildActions(secondary),
+                          for (final tab in controller.mineTabs)
+                            switch (tab) {
+                              .favorite => Obx(_buildFav),
+                              .history => Obx(_buildHistory),
+                              .later => Obx(_buildLater),
+                              .sub => Obx(_buildSub),
+                            },
+                        ],
+                      ),
               ),
             ),
           ),
         ),
       ],
     );
+  }
+
+  Widget _buildDesktopContent(Color secondary) {
+    return CustomScrollView(
+      controller: controller.historyCtr!.scrollController,
+      physics: const AlwaysScrollableScrollPhysics(),
+      slivers: [
+        SliverToBoxAdapter(
+          child: Column(
+            children: [
+              _buildUserInfo(theme, secondary),
+              _buildActions(secondary),
+              _buildTabHeader(
+                MineTabType.history,
+                controller.historyCtr!,
+                onPushDetail: _openHistory,
+              ),
+            ],
+          ),
+        ),
+        Obx(_buildDesktopHistory),
+        for (final tab in controller.mineTabs)
+          if (tab != MineTabType.history)
+            SliverToBoxAdapter(
+              child: switch (tab) {
+                .favorite => Obx(_buildFav),
+                .later => Obx(_buildLater),
+                .sub => Obx(_buildSub),
+                .history => const SizedBox.shrink(),
+              },
+            ),
+        const SliverToBoxAdapter(child: SizedBox(height: 150)),
+      ],
+    );
+  }
+
+  Widget _buildDesktopHistory() {
+    Widget message(String text) => SliverToBoxAdapter(
+      child: Padding(
+        padding: const EdgeInsets.all(40),
+        child: Center(child: Text(text, textAlign: TextAlign.center)),
+      ),
+    );
+
+    if (!controller.isLogin) {
+      return message('登录后查看观看记录');
+    }
+    final historyCtr = controller.historyCtr!;
+    switch (historyCtr.loadingState.value) {
+      case Loading():
+        return const SliverToBoxAdapter(
+          child: SizedBox(
+            height: 160,
+            child: Center(child: CircularProgressIndicator()),
+          ),
+        );
+      case Success(:final response):
+        if (response == null || response.isEmpty) {
+          return message('暂无观看记录');
+        }
+        return SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          sliver: SliverGrid.builder(
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 280,
+              mainAxisExtent: 220,
+              crossAxisSpacing: 14,
+              mainAxisSpacing: 14,
+            ),
+            itemCount: response.length,
+            itemBuilder: (context, index) {
+              if (index == response.length - 1) {
+                historyCtr.onLoadMore();
+              }
+              return LayoutBuilder(
+                builder: (context, constraints) => MineHistoryItem(
+                  item: response[index],
+                  width: constraints.maxWidth,
+                  onPop: () => _autoRefresh(historyCtr),
+                ),
+              );
+            },
+          ),
+        );
+      case Error(:final errMsg):
+        return message(errMsg ?? '观看记录加载失败，请点击刷新重试');
+    }
+  }
+
+  void _openHistory() {
+    Get.toNamed('/history')
+        ?.whenComplete(() => _autoRefresh(controller.historyCtr!));
   }
 
   Widget _buildActions(Color primary) {
@@ -473,9 +567,7 @@ class _MediaPageState extends CommonPageState<MinePage>
         item: element,
         onPop: () => _autoRefresh(controller.historyCtr!),
       ),
-      onPushDetail: () => Get.toNamed(
-        '/history',
-      )?.whenComplete(() => _autoRefresh(controller.historyCtr!)),
+      onPushDetail: _openHistory,
     );
   }
 
@@ -545,6 +637,19 @@ class _MediaPageState extends CommonPageState<MinePage>
           child: Center(child: Text(errMsg, textAlign: .center)),
         );
     }
+    return Column(
+      children: [
+        _buildTabHeader(tab, tabCtr, onPushDetail: onPushDetail),
+        child,
+      ],
+    );
+  }
+
+  Widget _buildTabHeader(
+    MineTabType tab,
+    MineRefreshMixin tabCtr, {
+    required VoidCallback onPushDetail,
+  }) {
     final secondary = theme.colorScheme.secondary;
     return Column(
       children: [
@@ -586,7 +691,6 @@ class _MediaPageState extends CommonPageState<MinePage>
             icon: const Icon(Icons.refresh, size: 20),
           ),
         ),
-        child,
       ],
     );
   }
