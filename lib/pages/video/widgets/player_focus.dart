@@ -198,8 +198,7 @@ class PlayerFocus extends StatelessWidget {
               ..controlsLock.value = false
               ..showControls.value = false;
           }
-          plPlayerController.triggerFullScreen(
-            status: !isFullScreen,
+          plPlayerController.toggleFullScreen(
             inAppFullScreen: HardwareKeyboard.instance.isShiftPressed,
           );
           return true;

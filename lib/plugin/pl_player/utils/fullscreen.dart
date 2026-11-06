@@ -9,7 +9,11 @@ import 'package:flutter/services.dart'
 bool _isDesktopFullScreen = false;
 
 void enterDesktopFullScreen({bool inAppFullScreen = false}) {
-  if (!inAppFullScreen && !_isDesktopFullScreen) {
+  if (inAppFullScreen) {
+    exitDesktopFullScreen();
+    return;
+  }
+  if (!_isDesktopFullScreen) {
     WindowController.instance.window?.isFullScreen = _isDesktopFullScreen =
         true;
   }

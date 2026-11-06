@@ -47,6 +47,7 @@ import 'package:PiliPlus/plugin/pl_player/widgets/backward_seek.dart';
 import 'package:PiliPlus/plugin/pl_player/widgets/bottom_control.dart';
 import 'package:PiliPlus/plugin/pl_player/widgets/common_btn.dart';
 import 'package:PiliPlus/plugin/pl_player/widgets/forward_seek.dart';
+import 'package:PiliPlus/plugin/pl_player/widgets/fullscreen_buttons.dart';
 import 'package:PiliPlus/plugin/pl_player/widgets/mpv_convert_webp.dart';
 import 'package:PiliPlus/plugin/pl_player/widgets/play_pause_btn.dart';
 import 'package:PiliPlus/utils/android/bindings.g.dart';
@@ -843,19 +844,9 @@ class _PLVideoPlayerState extends State<PLVideoPlayer>
       ),
 
       /// 全屏
-      BottomControlType.fullscreen => ComBtn(
-        width: widgetWidth,
-        height: 30,
-        tooltip: isFullScreen ? '退出全屏' : '全屏',
-        icon: isFullScreen
-            ? const Icon(Icons.fullscreen_exit, size: 24, color: Colors.white)
-            : const Icon(Icons.fullscreen, size: 24, color: Colors.white),
-        onTap: () =>
-            plPlayerController.triggerFullScreen(status: !isFullScreen),
-        onSecondaryTap: () => plPlayerController.triggerFullScreen(
-          status: !isFullScreen,
-          inAppFullScreen: true,
-        ),
+      BottomControlType.fullscreen => PlayerFullscreenButtons(
+        controller: plPlayerController,
+        buttonWidth: widgetWidth,
       ),
     };
 
