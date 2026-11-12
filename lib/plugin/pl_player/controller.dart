@@ -847,6 +847,7 @@ class PlPlayerController with BlockConfigMixin, AudioNormalizationMixin {
     assert(_videoPlayerController == null);
     final opt = {
       'video-sync': Pref.videoSync,
+      if (Platform.isWindows) 'volume-max': '${Pref.desktopVolumeLimitPercent}',
       if (Platform.isAndroid) 'ao': Pref.audioOutput,
     };
     final autosync = Pref.autosync;
@@ -861,7 +862,6 @@ class PlPlayerController with BlockConfigMixin, AudioNormalizationMixin {
       ),
     );
 
-    // >100% 的音量走 af 增益+限幅，避免直接放大 mpv volume 导致削波
     await setVolumeCapped(
       player,
       PlatformUtils.isMobile ? Pref.playerVolume / 100 : volume.value,
@@ -1275,8 +1275,11 @@ class PlPlayerController with BlockConfigMixin, AudioNormalizationMixin {
   Timer? volumeTimer;
   bool volumeInterceptEventStream = false;
 
-  final double maxVolume = PlatformUtils.isDesktop ? Pref.maxVolume : 1.0;
+  double get maxVolume => PlatformUtils.isDesktop ? Pref.maxVolume : 1.0;
   Future<void> setVolume(double volume, {bool showIndicator = true}) async {
+    if (PlatformUtils.isDesktop) {
+      volume = volume.clamp(0.0, maxVolume);
+    }
     if (this.volume.value != volume) {
       this.volume.value = volume;
       try {

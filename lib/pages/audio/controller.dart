@@ -409,6 +409,8 @@ class AudioController extends GetxController
       configuration: PlayerConfiguration(
         options: {
           if (Platform.isAndroid) 'ao': Pref.audioOutput,
+          if (Platform.isWindows)
+            'volume-max': '${Pref.desktopVolumeLimitPercent}',
           ...Pref.initBuffer(),
         },
       ),
@@ -418,7 +420,6 @@ class AudioController extends GetxController
       player = null;
       return;
     }
-    // >100% 的音量走 af 增益+限幅，避免直接放大 mpv volume 导致削波
     await setVolumeCapped(
       player,
       PlatformUtils.isDesktop ? desktopVolume.value : Pref.playerVolume / 100,

@@ -1089,8 +1089,11 @@ abstract final class Pref {
   static double get playerVolume => // mobile
       _setting.get(SettingBoxKey.playerVolume, defaultValue: 100.0);
 
-  static double get maxVolume => // desktop
-      _setting.get(SettingBoxKey.maxVolume, defaultValue: 2.0);
+  static const desktopVolumeLimitPercent = 500;
+  static double get maxVolume => _setting.get(
+    SettingBoxKey.maxVolume,
+    defaultValue: desktopVolumeLimitPercent / 100,
+  );
 
   static List? get liveStream => _setting.get(SettingBoxKey.liveStream);
 

@@ -10,6 +10,7 @@ import 'package:PiliPlus/pages/setting/models/model.dart';
 import 'package:PiliPlus/pages/setting/pages/fullscreen_sc.dart';
 import 'package:PiliPlus/pages/setting/widgets/select_dialog.dart';
 import 'package:PiliPlus/pages/setting/widgets/slider_dialog.dart';
+import 'package:PiliPlus/plugin/pl_player/controller.dart';
 import 'package:PiliPlus/plugin/pl_player/models/bottom_progress_behavior.dart';
 import 'package:PiliPlus/plugin/pl_player/models/fullscreen_mode.dart';
 import 'package:PiliPlus/plugin/pl_player/models/play_repeat.dart';
@@ -225,8 +226,8 @@ List<SettingsModel> get playSettings => [
       leading: const Icon(Icons.volume_up),
       getSubtitle: () => '当前:「${Pref.playerVolume.toStringAsFixed(0)}%」',
       onTap: showPlayerVolumeDialog,
-    )
-  else
+    ),
+  if (PlatformUtils.isDesktop)
     NormalModel(
       title: '最高音量',
       leading: const Icon(Icons.volume_up),
@@ -502,10 +503,14 @@ Future<void> _showMaxVolumeDialog(
     context,
     title: const Text('最高音量'),
     value: Pref.maxVolume * 100,
+    max: Pref.desktopVolumeLimitPercent.toDouble(),
     onChanged: (rawValue) {
       final maxVolume = (rawValue / 100).toPrecision(2);
       if (Pref.desktopVolume > maxVolume) {
         GStorage.setting.put(SettingBoxKey.desktopVolume, maxVolume);
+      }
+      if ((PlPlayerController.getVolumeIfExists() ?? 0) > maxVolume) {
+        PlPlayerController.setVolumeIfExists(maxVolume, showIndicator: false);
       }
       GStorage.setting
           .put(SettingBoxKey.maxVolume, maxVolume)
@@ -514,22 +519,20 @@ Future<void> _showMaxVolumeDialog(
   );
 }
 
-const kMinVolume = 100.0;
-const kMaxVolume = 300.0;
-
 Future<void> showVolumeDialog(
   BuildContext context, {
   required Widget title,
   required double value,
   required ValueChanged<double> onChanged,
+  double max = 300,
 }) async {
   final res = await showDialog<double>(
     context: context,
     builder: (context) => SliderDialog(
       title: title,
-      min: kMinVolume,
-      max: kMaxVolume,
-      divisions: 40,
+      min: 100,
+      max: max,
+      divisions: ((max - 100) / 5).round(),
       precise: 0,
       value: value,
       suffix: '%',

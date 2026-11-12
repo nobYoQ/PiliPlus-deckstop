@@ -81,14 +81,14 @@ mixin AudioNormalizationMixin {
     return {_kNormalizationKey: audioNormalization};
   }
 
-  String? _alimiter;
+  static final _alimiter = Expando<String>();
 
   /// mpv 的 volume 属性是三次方曲线（`gain = (volume / 100) ^ 3`），且这层
   /// 增益直接乘在 PCM 样值上：200% 就是 8 倍（+18dB），300% 是 27 倍
   /// （+28.6dB）。B 站音频峰值本就接近满刻度，放大后越过 0dBFS 被硬削波，
   /// 听感就是粗糙、发闷、带毛刺。
   ///
-  /// 这里让 mpv 的 volume 恒 <= 100，把 >100% 的增益挪进 af 滤镜链，用
+  /// 支持 alimiter 的平台让 mpv 的 volume 恒 <= 100，把 >100% 的增益挪进 af 滤镜链，用
   /// alimiter 自身的 level_in 放大、再限幅在 0dBFS 以内。增益按 mpv 原来的
   /// 三次方曲线换算，听感响度与旧版一致，只是不再破音。
   ///
@@ -103,19 +103,21 @@ mixin AudioNormalizationMixin {
   Future<void>? setVolumeCapped(Player? player, double volume) {
     assert(volume >= 0);
     if (player == null) return null;
+    // Windows 随包的 libmpv 未编入 alimiter，直接使用 mpv 的软件音量。
+    if (Platform.isWindows) return player.setVolume(volume * 100);
     final boost = _boostAf(volume);
     if (boost == null) {
-      if (_alimiter != null) {
+      if (_alimiter[player] != null) {
         player.setProperty('af', '');
-        _alimiter = null;
+        _alimiter[player] = null;
       }
       return player.setVolume(volume * 100);
     } else {
       // 拖动音量时增益连续变化，重建滤镜链开销偏大，
       // 增益按 0.5dB 取整，值未变化时跳过
-      if (_alimiter != boost) {
+      if (_alimiter[player] != boost) {
         player.setProperty('af', boost);
-        _alimiter = boost;
+        _alimiter[player] = boost;
       }
       return player.setVolume(100);
     }
@@ -123,12 +125,16 @@ mixin AudioNormalizationMixin {
 
   /// [volume] > 1.0 时返回防削波的增益滤镜串，否则返回 null。
   ///
-  /// level=0 关闭 alimiter 的自动电平（不做归一化），limit=1 即 0dBFS。
   static String? _boostAf(double volume) {
     if (volume <= 1.0) return null;
     // mpv 的音量是三次方曲线：gain = v^3
     final db = (60 * math.log(volume) / math.ln10 * 2).round() / 2;
     final gain = math.pow(10, db / 20).toDouble();
+    // alimiter 的输入增益上限为 64。更高档位降低限幅阈值，再由自动
+    // 电平补足增益，使安静片段继续变响，输出峰值仍限制在 0 dBFS。
+    if (gain > 64) {
+      return 'alimiter=level_in=64:limit=${64 / gain}:level=1';
+    }
     return 'alimiter=level_in=${gain.toStringAsFixed(3)}:limit=1:level=0';
   }
 }
