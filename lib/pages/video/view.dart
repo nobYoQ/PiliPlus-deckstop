@@ -1962,12 +1962,16 @@ class _VideoDetailPageVState extends State<VideoDetailPageV>
   }
 
   void onShowMemberPage(int? mid) {
-    videoDetailController.childKey.currentState?.showBottomSheet(
+    final scaffold = videoDetailController.childKey.currentState;
+    if (scaffold == null) return;
+    late final PersistentBottomSheetController sheet;
+    sheet = scaffold.showBottomSheet(
       constraints: const BoxConstraints(),
       dragHeight: 100,
       (context) {
         return HorizontalMemberPage(
           mid: mid,
+          onClose: sheet.close,
           videoDetailController: videoDetailController,
           ugcIntroController: ugcIntroController,
         );

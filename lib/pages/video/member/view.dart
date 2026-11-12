@@ -28,6 +28,7 @@ import 'package:PiliPlus/utils/bili_utils.dart';
 import 'package:PiliPlus/utils/extension/theme_ext.dart';
 import 'package:PiliPlus/utils/num_utils.dart';
 import 'package:PiliPlus/utils/page_utils.dart';
+import 'package:PiliPlus/utils/platform_utils.dart';
 import 'package:PiliPlus/utils/request_utils.dart';
 import 'package:PiliPlus/utils/utils.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
@@ -38,11 +39,13 @@ class HorizontalMemberPage extends StatefulWidget {
   const HorizontalMemberPage({
     super.key,
     required this.mid,
+    required this.onClose,
     required this.videoDetailController,
     required this.ugcIntroController,
   });
 
   final dynamic mid;
+  final VoidCallback onClose;
   final VideoDetailController videoDetailController;
   final UgcIntroController ugcIntroController;
 
@@ -87,10 +90,25 @@ class _HorizontalMemberPageState extends State<HorizontalMemberPage> {
 
   @override
   Widget build(BuildContext context) {
+    final content = Obx(() => _buildUserPage(_controller.userState.value));
     return Material(
-      child: Obx(
-        () => _buildUserPage(_controller.userState.value),
-      ),
+      child: PlatformUtils.isDesktop
+          ? Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(left: 16, right: 4),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('UP 主主页'),
+                      CloseButton(onPressed: widget.onClose),
+                    ],
+                  ),
+                ),
+                Expanded(child: content),
+              ],
+            )
+          : content,
     );
   }
 
